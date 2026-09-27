@@ -1,0 +1,810 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* ==========================================================================
+     GEAT DESIGN TOKENS
+     --------------------------------------------------------------------------
+     Two layers:
+
+     1. BRAND  — fixed identity values. Never change these to fix a contrast
+                 bug; change the semantic token that points at them.
+     2. SEMANTIC — what components actually consume (--primary, --muted-
+                 foreground, …). These are SURFACE-AWARE: :root defines them
+                 for light grounds; `.surface-dark` (below) redefines them for
+                 navy grounds.
+
+     RULE: components must never hardcode a hex or an hsl() literal. Use the
+     semantic token. To place content on a dark ground, add `surface-dark` to
+     the container — every token inside it retargets automatically.
+
+     Contrast, measured against WCAG 2.x (target 4.5:1 for text):
+       light ground #F6F7F8 / card #FFF
+         --primary  #FF9013 FILL ONLY (never text on light) · label --geat-dark 6.64
+         --brand-fill #FF9013 fill · --geat-dark label  6.64
+         --muted-foreground  5.61
+         --accent   #026CA2  as text 4.96 worst ground · white on it 5.44
+       dark ground #1D2735 (.surface-dark)
+         --primary  #FF9013  as text 6.64 (also the button fill)
+         --accent   #47BBF5  as text 6.96
+         --muted-foreground  6.38
+     ========================================================================== */
+
+  :root {
+    /* ---------- 1. brand identity ----------
+       Sampled directly out of src/assets/geat-logo.png by decoding it to a
+       canvas and histogramming every fully opaque pixel:
+         orange  8,245 px  modal value #FF9013  hsl(32 100% 54%)
+         blue   25,497 px  modal value #0287C8  hsl(200 98% 40%)
+
+       These were previously hsl(22 91% 54%) and hsl(204 100% 37%) — 10 and 4
+       degrees off the mark respectively. The site was painting a duller,
+       redder orange next to a logo that is bright amber-gold. That mismatch,
+       not the darkness, is why the brand colour never looked right. */
+    --geat-dark: 215 30% 16%;         /* #1D2735 */
+    --geat-orange: 32 100% 54%;       /* #FF9013 — sampled from the logo */
+    --geat-orange-dark: 32 100% 38%;  /* #C26700 — the amber deepened just enough to be a
+                                         visible BORDER on white (3.74:1). Not a text colour;
+                                         see the --primary note below. */
+    --geat-blue: 200 98% 32%;         /* #026CA2 — logo hue, clears 4.5 on EVERY light ground */
+    --geat-blue-light: 200 90% 62%;   /* #47BBF5 — legible on navy */
+    --geat-light: 216 20% 96%;
+
+    /* ---------- 1b. the primary button fill ----------
+       Deliberately its OWN token, not --primary.
+
+       --primary has to stay dark enough to be legible as TEXT on a near-white
+       page, which caps it around 34% lightness. A button fill has no such
+       limit: it is a surface, and its label supplies the contrast. Coupling
+       the two is what produced the rust-brown button — the fill was dragged
+       down to the text colour's ceiling.
+
+       Decoupled, the button can carry the logo orange at full brightness:
+         fill  #FF9013  with  --geat-dark label  =  6.64:1
+       and the edge token gives the pill a boundary on a near-white page,
+       where the fill itself is only 2.12:1 against the background. */
+    --brand-fill: var(--geat-orange);
+    --brand-fill-foreground: var(--geat-dark);
+    --brand-fill-edge: 32 100% 38%;   /* #C26700 — 3.74:1 vs page, 4.01 vs card */
+
+    /* ---------- 2. semantic — LIGHT ground ---------- */
+    --background: 220 13% 97%;
+    --foreground: 215 25% 17%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 17%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 17%;
+
+    /* ---------- ORANGE IS NOT A TEXT COLOUR ON LIGHT GROUNDS ----------
+       This token used to hold a darkened orange so that `text-primary` could
+       clear 4.5:1 on white. It cannot. To reach 4.5:1 against a near-white
+       ground a colour needs roughly <=18% relative luminance, and EVERY hue
+       that dark reads as brown — #B64A0C was rust, #A35700 was brown. The
+       colour was never the problem; using a saturated orange as small text on
+       white is.
+
+       Measured: all 145 orange text runs on light grounds were 10–18px. Not
+       one qualified for the 3:1 large-text allowance (>=24px, or >=18.66px
+       bold), so there was no size at which a bright orange was permissible
+       either.
+
+       So on light grounds --primary is now the BRAND FILL: the bright logo
+       amber, used for button fills, ornaments, rules, decorative marks and
+       active-state indicators — none of which carry a text-contrast
+       requirement. Text that used to be orange now uses:
+         eyebrows / meta      -> text-muted-foreground   5.61:1
+         inline prose links   -> text-accent (logo blue) 4.96:1
+         CTA-style links      -> text-foreground + amber arrow glyph
+         required asterisks   -> text-destructive
+         separators / bullets -> text-muted-foreground
+       On a DARK ground the constraint disappears (the amber measures 6.64:1
+       on navy), so .surface-dark keeps text-primary as real orange text. */
+    --primary: var(--brand-fill);
+    --primary-foreground: var(--brand-fill-foreground);
+    /* Consumed only by `.text-highlight`, which on a LIGHT ground is now solid
+       --accent rather than an amber sweep (see the note at that rule). This
+       light-ground value is therefore unused today; it is kept so the token
+       resolves if a future light-ground shimmer wants a legal darkest stop. */
+    --primary-shimmer: 32 100% 38%;
+
+    --secondary: 216 20% 96%;
+    --secondary-foreground: 215 25% 17%;
+
+    --muted: 216 16% 93%;
+    /* was 215 12% 47% → 4.36:1. */
+    --muted-foreground: 215 14% 40%;
+
+    /* points at the brand token so the corrected logo hue reaches every blue
+       on the site — the CTA hover sweep, links, chips — rather than only the
+       few places that used bg-geat-blue directly */
+    --accent: var(--geat-blue);
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 42%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 152 62% 32%;
+    --success-foreground: 0 0% 100%;
+
+    --border: 218 15% 91%;
+    --input: 216 14% 90%;
+    --ring: var(--brand-fill-edge);
+
+    --radius: 0.5rem;
+
+    /* ---------- 3. spacing rhythm ----------
+       One vertical scale for the whole site. Sections use .section-y /
+       .section-y-sm / .section-y-lg rather than ad-hoc py-* values, so
+       rhythm stays identical from page to page. */
+    --space-section: 3.5rem;      /* 56px  — mobile  */
+    --space-section-sm: 5rem;     /* 80px  — ≥640px  */
+    --space-section-lg: 6rem;     /* 96px  — ≥1024px */
+
+    /* Minimum comfortable pointer target (WCAG 2.5.8 / 2.5.5). */
+    --tap: 44px;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  /* ==========================================================================
+     DARK GROUND — add `surface-dark` to any container painted with
+     bg-geat-dark (heroes, footer, stat bands, dark cards, dark overlays).
+
+     Everything inside it keeps using the same class names — text-primary,
+     text-muted-foreground, border-border — and they retarget to values that
+     are legible on navy. No per-instance colour overrides anywhere.
+
+     `.dark` (the class-based site-wide theme) was defined here but was never
+     reachable: nothing added the class, and there were zero `dark:` variants
+     in application code. It has been replaced by this surface-scoped block,
+     which is the thing the site actually needs.
+     ========================================================================== */
+  .surface-dark {
+    --background: var(--geat-dark);
+    --foreground: 0 0% 100%;
+
+    /* 18%, not 21%. A raised card at 21% (#273345) put --primary at only
+       4.29:1 — the section ground was tuned but the card ground was not, and
+       every `text-primary` on a `bg-card` inside surface-dark failed AA
+       (6 real violations on /careers/faq and /careers/life-at-geat).
+       At 18% (#212C3B): --primary 4.74, white 14.11, --muted-foreground 7.68. */
+    --card: 215 28% 18%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 215 28% 18%;
+    --popover-foreground: 0 0% 100%;
+
+    /* the identity orange at full brightness — 6.64:1 on #1D2735.
+       On navy the logo orange needs no darkening at all, so heroes get the
+       exact brand colour for both the button fill and orange text. */
+    --primary: var(--geat-orange);
+    --primary-foreground: var(--geat-dark);
+    /* on navy the shimmer goes the other way — brighter is more legible */
+    --primary-shimmer: 36 100% 76%;
+
+    --secondary: 215 25% 24%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 215 25% 24%;
+    --muted-foreground: 214 18% 76%;   /* 6.6:1 on navy */
+
+    --accent: var(--geat-blue-light);  /* 6.96:1 on navy */
+    --accent-foreground: 215 30% 12%;
+
+    /* State colours must retarget too. The light-ground values
+       (--destructive #B81E1E, --success #1F6B45) measure 2.3:1 and 3.2:1 on
+       navy — an error message inside a surface-dark form would have been
+       unreadable the moment anyone put one there. */
+    --destructive: 0 80% 70%;          /* 5.39 on ground, 5.04 on card */
+    --destructive-foreground: 215 30% 12%;
+    --success: 152 60% 70%;            /* 9.57 on ground, 8.96 on card */
+    --success-foreground: 215 30% 12%;
+
+    --border: 215 20% 32%;
+    --input: 215 20% 32%;
+    --ring: 28 97% 70%;                /* 8.2:1 on navy */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+
+    /* ---------- reserve the fixed header's height ----------
+       The site header is `position: fixed`, so it occupies no space in flow.
+       Without a reservation it covered the top 64/80px of whatever came next
+       — but only on routes where a hero was the first element. On /careers/*
+       the sticky sub-nav sat between them, so those heroes were never
+       overlaid. Identical CSS, 80px different result, and it was one of the
+       two causes of the 220px hero-spacing spread documented in heroStyles.ts.
+
+       This is done here, once, in CSS rather than with an empty spacer <div>.
+       Two such spacers were briefly rendering on careers routes (one in
+       Navbar, one in CareersSubNav) which stacked to a 160px gap under the
+       header. A layout offset is a style concern; it does not belong in the
+       DOM. Keep in lockstep with the header's own `h-16 lg:h-20`. */
+    padding-top: 4rem;
+  }
+
+  @media (min-width: 1024px) {
+    body {
+      padding-top: 5rem;
+    }
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading;
+  }
+
+  /* ---------- focus: one visible ring for the whole site ----------
+     Components may restyle it, but nothing may remove it. Anything that
+     sets `outline-none` must supply its own ring; this is the floor. */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+
+  /* ---------- pointer targets ----------
+     On touch devices every control gets at least a 44px hit box without any
+     change to how it looks.
+
+     This MUST be written with :where(), which contributes zero specificity.
+     An earlier version used bare element selectors: `a[href]:not(.link-inline)`
+     scores (0,1,1) and therefore BEAT every Tailwind `min-h-*` utility at
+     (0,1,0) — Tailwind 3 emits no native @layer, so nothing rescued them.
+     The rule stopped being a floor and became a cap: the mobile drawer's
+     `min-h-14` rows rendered at 44px instead of 56px on real touch devices.
+     With :where() the utility always wins and 44px only applies when nothing
+     else has an opinion.
+
+     There is deliberately no `display` rule here. Forcing display on arbitrary
+     controls fights `hidden` / `lg:hidden` / `flex` — a previous version broke
+     the responsive nav on touch laptops, showing the hamburger and the desktop
+     nav at once. Use `.tap-target` where a mark needs centring in its hit box.
+
+     Inline links inside prose are exempt: they are covered by the surrounding
+     line height, and padding them would break text flow (the WCAG 2.5.8
+     "inline" exception). */
+  @media (pointer: coarse) {
+    :where(button, [role="button"], a[href], summary, input[type="checkbox"], input[type="radio"]) {
+      min-height: var(--tap);
+    }
+
+    :where(p, li, .prose) a[href],
+    :where(.link-inline) {
+      min-height: 0;
+    }
+  }
+
+  /* ---------- motion ----------
+     The site defines eight infinite keyframe animations. This is the single
+     place that honours a reduced-motion preference for all of them. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+
+    /* Scroll reveals must not leave content at opacity 0 when the
+       transition that would have revealed it is suppressed. */
+    .reveal {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+  }
+}
+
+@layer components {
+  .hero-headline {
+    @apply font-heading font-extrabold uppercase tracking-wide leading-tight;
+    font-size: clamp(1.5rem, 7vw, 3rem);
+    overflow-wrap: break-word;
+    text-wrap: balance;
+  }
+
+  .section-container {
+    @apply max-w-[1400px] mx-auto px-5 sm:px-6 lg:px-12;
+  }
+
+  /* ---------- vertical rhythm ----------
+     Every top-level <section> uses one of these instead of ad-hoc py-*
+     values, so the gap between sections is identical on every page.
+       .section-y-sm   40 / 56 / 64   tight bands, sub-navs, CTA strips
+       .section-y      56 / 80 / 96   the default
+       .section-y-lg   72 / 96 / 128  opening statements, closing CTAs */
+  .section-y-sm {
+    @apply py-10 sm:py-14 lg:py-16;
+  }
+  .section-y {
+    @apply py-14 sm:py-20 lg:py-24;
+  }
+  .section-y-lg {
+    @apply py-[4.5rem] sm:py-24 lg:py-32;
+  }
+
+  /* Space between a section heading block and the content under it. */
+  .section-head {
+    @apply mb-8 sm:mb-10 lg:mb-12;
+  }
+
+  /* ---------- text panel over a photograph ----------
+     Put this on the panel that CONTAINS the text, not on a separate
+     full-bleed overlay, and pair it with `surface-dark`.
+
+     Why it exists: there are eleven hand-rolled scrims across eight files,
+     every one with a different opacity ramp, and a full-bleed
+     `from-geat-dark via-geat-dark/60 to-transparent` is only ~60% opaque
+     where a caption's FIRST line sits. The engineers card measured 4.04:1
+     for exactly that reason — the text was over the thin part of someone
+     else's gradient.
+
+     The floor here is 85% ground under every line of the panel, which holds
+     even against a pure-white photograph:
+       --muted-foreground on geat-dark/85 over white  = 5.11:1
+       --foreground       on geat-dark/85 over white  = 9.39:1
+     That guarantee does not depend on which image loads, which matters
+     because the asset CDN is currently unreachable and photo-backed contrast
+     cannot otherwise be verified. */
+  .text-scrim {
+    background-image: linear-gradient(
+      to top,
+      hsl(var(--geat-dark)) 0%,
+      hsl(var(--geat-dark) / 0.95) 55%,
+      hsl(var(--geat-dark) / 0.85) 100%
+    );
+  }
+
+  /* ---------- pointer targets ----------
+     Wraps a small visual mark (a 14px carousel dot, a 16px icon) in a full
+     44x44 hit box without changing how the mark looks. */
+  .tap-target {
+    @apply inline-flex items-center justify-center;
+    min-width: var(--tap);
+    min-height: var(--tap);
+  }
+
+  /* Opt an inline prose link out of the coarse-pointer min-height rule.
+     The underline takes the ACCENT, not the brand amber: inline prose links
+     are painted `text-accent` (the logo blue) because amber cannot be text on
+     a light ground, and an amber rule under a blue word was the one place the
+     two roles were mixed. Both tokens are surface-aware, so this tracks the
+     link colour on navy as well. */
+  .link-inline {
+    @apply underline underline-offset-2 decoration-accent/40 hover:decoration-accent;
+  }
+
+  /* Skip link — first focusable element on every page. */
+  .skip-link {
+    @apply sr-only;
+  }
+  .skip-link:focus-visible {
+    @apply not-sr-only fixed left-4 top-4 z-[100] rounded-md bg-primary px-4 py-3
+           font-heading text-sm font-semibold text-primary-foreground shadow-lg;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Horizontal scroll rows without a visible scrollbar (mobile carousels/tab rows) */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity, transform;
+  }
+  .reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+  .reveal-delay-4 { transition-delay: 0.4s; }
+
+  /* On small screens reveal sooner and with less travel so content never feels missing */
+  @media (max-width: 767px) {
+    .reveal {
+      transform: translateY(16px);
+      transition-duration: 0.6s;
+    }
+    .reveal-delay-1, .reveal-delay-2, .reveal-delay-3, .reveal-delay-4 {
+      transition-delay: 0.05s;
+    }
+  }
+
+
+  @keyframes cta-pulse {
+    0%, 100% { box-shadow: 0 10px 25px -5px hsl(var(--primary) / 0.4), 0 0 0 0 hsl(var(--primary) / 0.5); }
+    50% { box-shadow: 0 10px 25px -5px hsl(var(--primary) / 0.5), 0 0 0 12px hsl(var(--primary) / 0); }
+  }
+  .cta-pulse {
+    animation: fade-in 0.6s ease-out, cta-pulse 2.4s ease-in-out 0.6s infinite;
+  }
+
+  /* Unified CTA button — color sweep fill on hover */
+  .btn-cta {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+    padding: 0.75rem 1.5rem;
+    min-height: 2.875rem;
+    border-radius: 9999px;
+    /* The logo orange, identical on every surface — this is the one control
+       on the site that must read as the brand mark, so it does NOT flip with
+       .surface-dark the way text colours do. */
+    background-color: hsl(var(--brand-fill));
+    color: hsl(var(--brand-fill-foreground));
+    /* A 1px darker-amber rim. The fill is only 2.12:1 against a near-white
+       page, so without this the pill's edge dissolves; the rim measures
+       3.74:1 and gives the component a boundary (WCAG 1.4.11). On navy it
+       reads as a subtle inner edge. */
+    border: 1px solid hsl(var(--brand-fill-edge));
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    overflow: hidden;
+    isolation: isolate;
+    transition: color 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 8px 20px -8px hsl(var(--brand-fill) / 0.5);
+  }
+  @media (max-width: 479px) {
+    .btn-cta {
+      width: 100%;
+      max-width: 20rem;
+      padding: 0.75rem 1.25rem;
+    }
+  }
+
+  .btn-cta::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: hsl(var(--geat-blue));
+    transform: translateX(-101%);
+    transition: transform 0.55s cubic-bezier(0.77, 0, 0.18, 1);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .btn-cta:hover {
+      /* the sweep fills with --accent, so the label must switch to the
+         accent's own foreground, not a hardcoded white */
+      color: hsl(var(--accent-foreground));
+      transform: translateY(-2px);
+      box-shadow: 0 14px 28px -10px hsl(var(--accent) / 0.55);
+    }
+    .btn-cta:hover::before {
+      transform: translateX(0);
+    }
+  }
+
+  /* Click / active — lock to the full accent fill with a quick press */
+  .btn-cta:active {
+    background-color: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+    transform: translateY(0) scale(0.97);
+    box-shadow: 0 6px 16px -6px hsl(var(--accent) / 0.7),
+      0 0 0 6px hsl(var(--accent) / 0.18);
+    transition: transform 0.15s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  }
+  .btn-cta:active::before {
+    transform: translateX(0);
+  }
+  .btn-cta:focus-visible {
+    outline: 3px solid hsl(var(--ring));
+    outline-offset: 3px;
+  }
+
+  /* Secondary CTA on a light ground. */
+  .btn-cta-outline {
+    background-color: transparent;
+    color: hsl(var(--foreground));
+    border: 1.5px solid hsl(var(--brand-fill-edge));
+    box-shadow: none;
+  }
+  .btn-cta-outline:hover {
+    color: hsl(var(--accent-foreground));
+  }
+
+  /* Secondary CTA on a dark ground. Inside .surface-dark the tokens have
+     already flipped, so this only needs the transparent-with-border shape. */
+  .btn-cta-outline-light {
+    background-color: transparent;
+    color: hsl(var(--foreground));
+    border: 1.5px solid hsl(var(--foreground) / 0.45);
+    box-shadow: none;
+  }
+  .btn-cta-outline-light:hover {
+    color: hsl(var(--accent-foreground));
+    border-color: hsl(var(--accent));
+  }
+
+  /* Animated icons inside CTAs — slide on hover, snap on click */
+  .btn-cta svg,
+  .icon-cta {
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .btn-cta:hover svg,
+  a:hover > .icon-cta,
+  button:hover > .icon-cta,
+  .group:hover .icon-cta {
+    transform: translateX(4px);
+  }
+  .btn-cta:active svg {
+    transform: translateX(8px) scale(0.92);
+  }
+
+  /* Chatbot launcher attention animation */
+  @keyframes chat-pop-in {
+    0%   { opacity: 0; transform: translateY(40px) scale(0.6); }
+    60%  { opacity: 1; transform: translateY(-6px) scale(1.08); }
+    80%  { transform: translateY(0) scale(0.96); }
+    100% { transform: translateY(0) scale(1); }
+  }
+  @keyframes chat-bounce {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-6px); }
+  }
+  @keyframes chat-ring {
+    0%   { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.55); }
+    70%  { box-shadow: 0 0 0 18px hsl(var(--primary) / 0); }
+    100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0); }
+  }
+  .chat-pop-in {
+    animation: chat-pop-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .chat-bounce {
+    animation: chat-bounce 2.4s ease-in-out 0.8s infinite;
+  }
+  .chat-ring {
+    animation: chat-ring 2s ease-out 0.8s infinite;
+  }
+
+
+  /* ---------- the display highlight word ----------
+     The emphasised word of a display heading: "À PROPOS DE **NOUS**",
+     "We bring the **energy**", "Career **Opportunities**".
+
+     THIS WAS THE ONE ORANGE-ON-LIGHT FAILURE AXE COULD NOT SEE. The previous
+     `.text-gradient-orange` clipped an amber gradient to the glyphs and set
+     `color: transparent`, so the computed text colour is transparent and the
+     contrast rule skips the node — while the pixels a reader actually sees
+     were --primary (#FF9013) at both ends of the sweep, i.e. 2.27:1. Two of
+     its three call sites are inside surface-dark and were always fine; the
+     /news one sits on a light `bg-secondary` panel and was not.
+
+     So the highlight became surface-aware like everything else: the accent
+     blue on light (4.96:1, and still a logo colour, so the word is still
+     "highlighted in the brand"), the amber shimmer on navy where amber is
+     legal. Renamed from `.text-gradient-orange` because on light it is
+     neither a gradient nor orange, and a name that lies is how the failure
+     survived this long. */
+  .text-highlight {
+    color: hsl(var(--accent));
+  }
+  .surface-dark .text-highlight {
+    background: linear-gradient(
+      120deg,
+      hsl(var(--primary)) 0%,
+      hsl(var(--primary-shimmer)) 50%,
+      hsl(var(--primary)) 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shimmer 6s linear infinite;
+  }
+  @keyframes shimmer {
+    to { background-position: 200% center; }
+  }
+
+  @keyframes float-slow {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    50% { transform: translate3d(20px, -30px, 0) scale(1.05); }
+  }
+  .animate-float-slow { animation: float-slow 14s ease-in-out infinite; }
+
+  @keyframes ken-burns {
+    0% { transform: scale(1) translate(0, 0); }
+    100% { transform: scale(1.12) translate(-1.5%, -1%); }
+  }
+  .animate-ken-burns { animation: ken-burns 18s ease-out forwards; }
+
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  .animate-marquee { animation: marquee 30s linear infinite; }
+
+  .tilt-card {
+    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.5s;
+  }
+  .tilt-card:hover {
+    transform: perspective(1000px) rotateY(-4deg) rotateX(2deg) translateY(-6px);
+    box-shadow: 0 30px 60px -20px hsl(var(--geat-orange) / 0.35);
+  }
+
+  /* Card aura — pulsing glow ring on hover */
+  @keyframes card-aura {
+    0%, 100% {
+      box-shadow: 0 0 0 0 hsl(var(--geat-orange) / 0.35),
+                  0 0 30px -10px hsl(var(--geat-orange) / 0.25);
+    }
+    50% {
+      box-shadow: 0 0 0 8px hsl(var(--geat-orange) / 0),
+                  0 0 40px -4px hsl(var(--geat-orange) / 0.45);
+    }
+  }
+  .card-aura {
+    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 0.4s ease;
+  }
+  .card-aura:hover,
+  .card-aura:focus-visible {
+    transform: translateY(-8px);
+    animation: card-aura 2.4s ease-in-out infinite;
+  }
+  .card-aura.is-active {
+    transform: translateY(-8px);
+    box-shadow: 0 0 0 4px hsl(var(--geat-orange) / 0.25),
+                0 0 35px -5px hsl(var(--geat-orange) / 0.4);
+  }
+
+  /* Click ripple effect */
+  @keyframes card-ripple {
+    0% { transform: scale(0); opacity: 0.5; }
+    100% { transform: scale(2.5); opacity: 0; }
+  }
+  .card-ripple::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(circle, hsl(var(--geat-orange) / 0.25) 0%, transparent 70%);
+    transform: scale(0);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .card-ripple:active::after {
+    animation: card-ripple 0.5s ease-out forwards;
+  }
+
+  /* ---------- broken-image placeholder ----------
+     Set by src/lib/imageFallback.ts on any <img> that fails to decode.
+     Keeps the element's own box, so nothing reflows. */
+  img[data-img-failed] {
+    background-color: hsl(var(--muted));
+    background-image: linear-gradient(
+        135deg,
+        hsl(var(--geat-dark) / 0.92) 0%,
+        hsl(var(--geat-dark) / 0.72) 55%,
+        hsl(var(--geat-blue) / 0.45) 100%
+      ),
+      repeating-linear-gradient(
+        45deg,
+        hsl(0 0% 100% / 0.04) 0 10px,
+        transparent 10px 20px
+      );
+    object-fit: cover;
+    color: transparent;
+    font-size: 0;
+    min-height: 3rem;
+  }
+
+  /* Subtle dot-grid texture for premium CTA bands */
+  .bg-dot-pattern {
+    background-image: radial-gradient(hsl(var(--geat-blue) / 0.22) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  .bg-grid-pattern {
+    background-image: linear-gradient(hsl(var(--geat-blue) / 0.12) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--geat-blue) / 0.12) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-spin-slow {
+  animation: spin-slow 14s linear infinite;
+  display: inline-block;
+}
+
+/* Title reveal animation: gradient text slides into view */
+@keyframes title-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(18px);
+    filter: blur(6px);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+.animate-title-reveal {
+  animation: title-reveal 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* ---------- Mobile polish (320px – 767px) ---------- */
+@media (max-width: 767px) {
+  /* Never let long words or wide media break the layout */
+  h1, h2, h3, p, li, a {
+    overflow-wrap: break-word;
+  }
+  h1, h2, h3 {
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+
+  /* Comfortable, zoom-free form controls */
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px;
+    min-height: 46px;
+  }
+  textarea {
+    min-height: 120px;
+  }
+
+  /* Touch-friendly inline actions */
+  a[href]:not(.btn-cta),
+  button:not(.btn-cta) {
+    touch-action: manipulation;
+  }
+
+  /* Softer, consistent card treatment */
+  .rounded-2xl { border-radius: 0.875rem; }
+}
+
+/* Hide floating widgets while the mobile navigation menu is open */
+body.menu-open .floating-widget {
+  opacity: 0;
+  pointer-events: none;
+}

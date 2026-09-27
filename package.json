@@ -1,0 +1,15 @@
+{
+  "name": "geat-website-root",
+  "private": true,
+  "description": "Forwarder so npm scripts work from the repo root; the real app lives in GEAT-website/",
+  "scripts": {
+    "dev": "npm --prefix GEAT-website run dev",
+    "build": "npm --prefix GEAT-website run build",
+    "build:dev": "npm --prefix GEAT-website run build:dev",
+    "preview": "npm --prefix GEAT-website run preview",
+    "lint": "npm --prefix GEAT-website run lint",
+    "test": "npm --prefix GEAT-website run test",
+    "test:watch": "npm --prefix GEAT-website run test:watch",
+    "install:app": "npm --prefix GEAT-website install"
+  }
+}

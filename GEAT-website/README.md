@@ -1,0 +1,220 @@
+# GEAT Corporate Website
+
+Corporate website developed for **GEAT — General Electric Algeria Turbines**, providing a centralized digital presence for the company, its activities, products and services, news, and career opportunities.
+
+The website supports **English and French** and includes dedicated sections for company information, products and services, news, careers, and contact information.
+
+---
+
+## Overview
+
+This repository contains the front-end application for the GEAT corporate website. It presents the company, its leadership, its turbine product and service portfolio, its news and milestones, and it runs the public recruitment funnel (job board, job details, application forms and application-status lookup).
+
+The site is a **static, client-rendered single-page application**. All content is authored in TypeScript data modules under [src/data/](src/data/) and [src/i18n/](src/i18n/) — there is no CMS, no authenticated area and no back-end service in this repository.
+
+Intended audiences:
+
+| Audience | Primary destination |
+| --- | --- |
+| Utility, EPC and industrial buyers | `/products-services`, `/contact` |
+| Job seekers (engineers, technicians, graduates) | `/careers/*` |
+| Journalists and institutional partners | `/news`, `/about`, `/leadership` |
+
+Main areas of the site, all of which exist in the codebase:
+
+- **Home** (`/`)
+- **Company** — About (`/about`) and Leadership (`/leadership`)
+- **Products & Services** — index (`/products-services`) and nine detail pages (`/products-services/:slug`)
+- **News** (`/news`) — articles, milestones timeline and careers cross-promotion
+- **Careers** (`/careers`) — landing page, job search, job details, application forms, spontaneous application, how to apply, life at GEAT, FAQ and per-discipline field pages
+- **Contact** (`/contact`)
+
+A companion document, [UI-UX-GUIDELINES.md](UI-UX-GUIDELINES.md), is the reference for the site's design system: design tokens, typography, layout rules, component inventory, responsive behaviour, accessibility notes and the rules to follow for new work. It should be read before making any visual change.
+
+---
+
+## Tech Stack
+
+All versions below are taken from [package.json](package.json) and [package-lock.json](package-lock.json).
+
+| Area | Technology |
+| --- | --- |
+| Framework | React 18.3 (`react`, `react-dom`) |
+| Language | TypeScript 5.8 |
+| Build tool | Vite 5.4 with `@vitejs/plugin-react-swc` |
+| Styling | Tailwind CSS 3.4, PostCSS, Autoprefixer, `tailwindcss-animate`, `@tailwindcss/typography` |
+| UI components | shadcn/ui (vendored into [src/components/ui/](src/components/ui/)) on Radix UI primitives, with `class-variance-authority`, `clsx` and `tailwind-merge` |
+| Icons | `lucide-react` |
+| Routing | `react-router-dom` 6.30 (`BrowserRouter`, declared in [src/App.tsx](src/App.tsx)) |
+| Validation | `zod` 3.25 |
+| Data/state | `@tanstack/react-query` 5.83 — the `QueryClientProvider` is mounted in [src/App.tsx](src/App.tsx); no remote queries are issued today |
+| Notifications | Radix toast (`src/components/ui/toaster`) and `sonner` |
+| Unit testing | Vitest 3 with jsdom, Testing Library and `@testing-library/jest-dom` |
+| E2E testing | Playwright 1.x (configured, see *Features* for current status) |
+| Linting | ESLint 9 with `typescript-eslint`, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh` |
+
+Notes on dependency usage, verified against the source:
+
+- Application forms are built with controlled React state validated by **zod**. `react-hook-form` and `@hookform/resolvers` are installed because the shadcn `form` primitive depends on them; no application page uses them directly.
+- The full shadcn/ui set (49 files) is vendored, but the application imports only a subset: `button`, `dialog`, `input`, `label`, `radio-group`, `select`, `separator`, `sheet`, `skeleton`, `sonner`, `textarea`, `toast`, `toaster`, `toggle`, `tooltip`. The remaining primitives (and their transitive dependencies such as `recharts`, `embla-carousel-react`, `cmdk`, `vaul`, `react-day-picker`, `input-otp`, `react-resizable-panels`, `next-themes`, `date-fns`) are currently unused by application code.
+
+---
+
+## Features
+
+### Implemented
+
+- **Routing** — 16 routes plus a catch-all 404, declared in [src/App.tsx](src/App.tsx). `ScrollToTop` resets scroll position on every navigation.
+- **Home page** — hero slider (3 autoplay slides), announcements, company introduction, values, product categories, animated statistics, employee stories, careers entry points and a newsletter panel.
+- **Company pages** — `/about` (company story, joint-venture context) and `/leadership` (executive team).
+- **Products & Services** — category index plus nine data-driven detail pages: `gas-turbines`, `steam-turbines`, `auxiliaries`, `control-systems`, `grid-solutions`, `digital-solutions`, `repair-services`, `power-plant-maintenance`, `aero-derivative-turbine-services`. Detail pages support overview copy, animated key figures, specification tables, grouped item lists and related-product links, all driven by [src/data/products.ts](src/data/products.ts).
+- **News** — featured article, article grid, milestones timeline, keyword filter with an empty state, and careers cross-promotion.
+- **Job listings** — a filterable job board (`OpenJobsBoard`) over 20 positions defined in [src/data/careers.ts](src/data/careers.ts), with keyword search, faceted filters (department, city, employment type, experience, education, level, mode) including live result counts, sorting by date or title, pagination, and a per-discipline filtered view on `/careers/fields/:slug`.
+- **Job details and application** — single-vacancy pages with responsibilities, requirements, qualifications and a position-details sidebar, plus a full application form with CV upload (PDF/Word, 5 MB client-side limit), consent confirmation, an accessible error summary and a generated reference number.
+- **Spontaneous application** — open application form at `/careers/submit-cv` for candidates with no matching vacancy.
+- **Careers information pages** — how to apply (five-step process), life at GEAT, and an accordion FAQ.
+- **Contact form** — validated with zod, including a select, a radio group for communications consent and a message field; reports its outcome with a toast.
+- **Application status modal** — available on all `/careers/*` routes; looks up a reference number and renders a progress state.
+- **"Geni" careers assistant** — a floating chat widget ([src/components/GeniChat.tsx](src/components/GeniChat.tsx)) that answers careers questions with rule-based keyword matching over the local job data. It runs entirely in the browser and calls no external service.
+- **Bilingual content (EN/FR)** — a language context ([src/i18n/LanguageContext.tsx](src/i18n/LanguageContext.tsx)) translates via a dictionary keyed on the English source string. The selection is persisted in `localStorage` under `geat-lang` and sets `document.documentElement.lang`. French strings live in [src/i18n/fr/](src/i18n/fr/), split into `common`, `home`, `careers`, `products` and `pages`.
+- **Accessibility work** — skip-to-content and focus management, accessible dialog handling (`useDialog`), form error summaries with focus transfer, 44px minimum touch targets and reduced-motion support. See section 10 of [UI-UX-GUIDELINES.md](UI-UX-GUIDELINES.md).
+- **SEO / social metadata** — title, description, Open Graph and Twitter card tags in [index.html](index.html); [public/robots.txt](public/robots.txt) allows all crawlers.
+
+### Partially implemented / current status
+
+- **Form submission is not wired to any back end.** All forms validate on the client and then simulate success:
+  - the contact form shows a 700 ms pending state and a confirmation toast, then resets;
+  - the job application form generates a client-side reference (`GEAT-<year>-<6 digits>`) and shows a confirmation panel — the CV file is never transmitted;
+  - the application-status modal derives a demonstration result deterministically from the reference string rather than querying a system;
+  - the newsletter form calls `preventDefault()` and does nothing further.
+
+  Connecting these to an ATS, mail service or API is outstanding work.
+- **End-to-end tests.** Playwright is configured ([playwright.config.ts](playwright.config.ts), [playwright-fixture.ts](playwright-fixture.ts)) against `http://localhost:8080` with a `testDir` of `./e2e`, but that directory does not exist yet and there is no `test:e2e` script. `axe-core` is installed for accessibility testing but is not yet referenced by any test.
+- **Unit tests.** Vitest is fully configured, but [src/test/example.test.ts](src/test/example.test.ts) is currently the only test file.
+- **Footer legal links.** Cookies, Terms, Privacy and Preferences all currently resolve to `/contact`; the real pages are to be defined.
+
+---
+
+## Prerequisites
+
+| Requirement | Detail |
+| --- | --- |
+| Node.js | **Not pinned in this repository** — there is no `engines` field, `.nvmrc` or `.node-version`. Derived from the installed dependencies' own engine ranges, the minimum is Node **18.18+**, and Node **20 LTS or newer** is required if Playwright is used. Node 20 LTS is the recommended baseline; the exact version should be agreed with the GEAT IT team and pinned. |
+| Package manager | **npm** — `package-lock.json` (lockfile v3) is the only lockfile in the repository. No Yarn, pnpm or Bun lockfile is present. |
+| Other software / services | None. The application has no database, API or external service dependency. |
+
+---
+
+## Getting Started
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/Selmamakh/GEAT-website.git
+
+# 2. Enter the project directory
+cd GEAT-website
+
+# 3. Install dependencies
+npm install
+
+# 4. Start the development server
+npm run dev
+```
+
+The development server runs on **http://localhost:8080** (host `::`, configured in [vite.config.ts](vite.config.ts)).
+
+No environment configuration is required.
+
+To check a production build locally:
+
+```bash
+npm run build
+npm run preview
+```
+
+---
+
+## Project Structure
+
+```text
+GEAT-website/
+├── public/                     # Served as-is
+│   ├── favicon.png
+│   ├── robots.txt
+│   └── videos/careers.mp4
+├── src/
+│   ├── assets/                 # Imported imagery (incl. ps/ for products & services)
+│   ├── components/             # Application components
+│   │   ├── ui/                 # shadcn/ui primitives
+│   │   ├── Navbar.tsx  Footer.tsx  PageHero.tsx  HeroSlider.tsx
+│   │   ├── OpenJobsBoard.tsx  ApplicationStatusModal.tsx  GeniChat.tsx
+│   │   ├── heroStyles.ts       # Shared hero geometry
+│   │   └── floatingWidgetLane.ts
+│   ├── data/                   # Content modules
+│   │   ├── careers.ts          # Jobs, career fields, filter facets, FAQs
+│   │   └── products.ts         # Product & service entries
+│   ├── hooks/                  # useDialog, use-mobile, use-reveal, use-toast
+│   ├── i18n/                   # LanguageContext + French dictionary (fr/)
+│   ├── lib/                    # cn() helper, global image fallback
+│   ├── pages/                  # One component per route
+│   ├── test/                   # Vitest setup and tests
+│   ├── App.tsx                 # Providers and route table
+│   ├── main.tsx                # Entry point
+│   └── index.css               # Design tokens, base layer, utilities
+├── index.html
+├── components.json             # shadcn/ui configuration
+├── tailwind.config.ts
+├── postcss.config.js
+├── vite.config.ts
+├── vitest.config.ts
+├── playwright.config.ts
+├── eslint.config.js
+├── tsconfig.json  tsconfig.app.json  tsconfig.node.json
+├── package.json
+└── UI-UX-GUIDELINES.md         # Design system reference
+```
+
+The alias `@/*` resolves to `src/*` ([vite.config.ts](vite.config.ts), [tsconfig.app.json](tsconfig.app.json)).
+
+---
+
+## Available Scripts
+
+Defined in [package.json](package.json):
+
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start the Vite development server on port 8080 |
+| `npm run build` | Production build into `dist/` |
+| `npm run build:dev` | Build with Vite's `development` mode |
+| `npm run preview` | Serve the contents of `dist/` locally |
+| `npm run lint` | Run ESLint across the project |
+| `npm test` | Run the Vitest suite once |
+| `npm run test:watch` | Run Vitest in watch mode |
+
+No script exists for Playwright; E2E runs would currently be invoked directly with `npx playwright test` once an `e2e/` directory is added.
+
+---
+
+## Deployment
+
+The project is currently configured for local development only. The repository contains no deployment or CI/CD configuration.
+
+> Deployment configuration is to be defined in coordination with the GEAT IT team.
+
+---
+
+## Author
+
+**Developed by Selma Makhloufi**
+
+5th-year Engineering Student — Cybersecurity & Web Development
+
+Internship at GEAT (General Electric Algeria Turbines) — 2026
+
+---
+
+## License
+
+This project was developed as part of an internship at GEAT (General Electric Algeria Turbines).
+The project is intended for GEAT's internal and corporate use. Licensing and usage rights are subject to GEAT's policies and agreements.
