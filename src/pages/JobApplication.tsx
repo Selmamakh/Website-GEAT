@@ -202,6 +202,11 @@ const JobApplication = () => {
         experience: form.experience,
       });
       setReference(receipt.reference);
+      toast({
+        title: t("Application Submitted Successfully"),
+        description: `${t("Application reference number")}: ${receipt.reference}`,
+        variant: "success",
+      });
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
       const message = apiErrorMessage(error);
@@ -243,7 +248,7 @@ const JobApplication = () => {
           <section className="section-y-lg">
             <div className="section-container">
               <div className="mx-auto max-w-xl rounded-2xl border border-border bg-card p-10 text-center shadow-sm">
-                <CheckCircle2 className="mx-auto mb-6 h-14 w-14 text-primary" aria-hidden="true" />
+                <CheckCircle2 className="mx-auto mb-6 h-14 w-14 text-success" aria-hidden="true" />
                 <h1 className="font-heading text-2xl font-bold text-foreground lg:text-3xl">
                   {t("Application Submitted Successfully")}
                 </h1>

@@ -52,7 +52,7 @@ const readFieldErrors = (body: unknown): Record<string, string> => {
   if (!body || typeof body !== "object") return out;
   const record = body as Record<string, unknown>;
 
-  const errors = record.errors ?? record.fieldErrors ?? record.details;
+  const errors = record.errors ?? record.fields ?? record.fieldErrors ?? record.details;
 
   if (Array.isArray(errors)) {
     for (const entry of errors) {
